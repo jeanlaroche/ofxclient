@@ -154,7 +154,7 @@ class Client:
         logging.debug('posting data to %s' % i.url)
         garbage, path = splittype(i.url)
         host, selector = splithost(path)
-        h = HTTPSConnection(host, timeout=60)
+        h = HTTPSConnection(host, timeout=600)
         # Discover requires a particular ordering of headers, so send the
         # request step by step.
         h.putrequest('POST', selector, skip_host=True,

@@ -12,8 +12,8 @@ accounts = inst.accounts()
 for a in accounts:
     # a StringIO wrapped string of the raw OFX download
     download  = a.download(days=5)
-    print download.read()
+    print(download.read())
 
     # an ofxparse.Statement object
     statement = a.statement(days=5)
-    print statement.balance
+    print(statement.balance)

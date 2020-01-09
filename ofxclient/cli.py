@@ -74,23 +74,29 @@ def main_menu(args):
 
         menu_item('A', 'Add an account')
         if accounts:
-            menu_item('D', 'Download all combined')
+            menu_item('D', 'Download all combined, D1,4,5 to download accounts 1 4 and 5')
 
         menu_item('Q', 'Quit')
 
         choice = prompt().lower()
         if choice == 'a':
             add_account_menu(args)
-        elif choice == 'd':
+        elif choice[0] == 'd':
             if not accounts:
                 print("no accounts on file")
             else:
-                ofxdata = combined_download(accounts, days=args.download_days)
+                if len(choice) > 1:
+                    # In case we do D1,2,3,4,5
+                    indices = choice[1:].split(',')
+                    ofxdata = combined_download([accounts[int(ii)] for ii in indices], days=args.download_days)
+                else:
+                    ofxdata = combined_download(accounts, days=args.download_days)
                 wrote = write_and_handle_download(
                     ofxdata,
                     'combined_download.ofx'
                 )
                 print("wrote: %s" % wrote)
+                return
         elif choice in ['q', '']:
             return
         elif int(choice) < len(accounts):
