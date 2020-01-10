@@ -15,7 +15,10 @@ import time
 done = Array('h',100)
 def do_download(a):
     ofx = a.download(days=a.days).read()
-    stripped = ofx.partition('<OFX>')[2].partition('</OFX>')[0]
+    if not len(ofx):
+        stripped=''
+    else:
+        stripped = ofx.partition('<OFX>')[2].partition('</OFX>')[0]
     print('->>{} DONE'.format(a.description.strip()))
     done[a.ii]=1
     return stripped

@@ -15,6 +15,7 @@ except ImportError:
     # python 2
     from urllib import splittype, splithost
 import uuid
+import socket
 
 DEFAULT_APP_ID = 'QWIN'
 DEFAULT_APP_VERSION = '2500'
@@ -24,6 +25,7 @@ DEFAULT_ACCEPT = '*/*, application/x-ofx'
 
 LINE_ENDING = "\r\n"
 
+timeout = 6
 
 def ofx_uid():
     return str(uuid.uuid4().hex)
@@ -131,6 +133,7 @@ class Client:
         sending back session cookies (``self.set_cookies`` True).
         """
         res, response = self._do_post(query)
+        if res is None: return response
         cookies = res.getheader('Set-Cookie', None)
         if len(response) == 0 and cookies is not None and res.status == 200:
             logging.debug('Got 0-length 200 response with Set-Cookies header; '
@@ -154,7 +157,7 @@ class Client:
         logging.debug('posting data to %s' % i.url)
         garbage, path = splittype(i.url)
         host, selector = splithost(path)
-        h = HTTPSConnection(host, timeout=600)
+        h = HTTPSConnection(host, timeout=timeout)
         # Discover requires a particular ordering of headers, so send the
         # request step by step.
         h.putrequest('POST', selector, skip_host=True,
@@ -178,7 +181,11 @@ class Client:
         logging.debug('---- request body (query) ----')
         logging.debug(query)
         h.endheaders(query.encode())
-        res = h.getresponse()
+        try:
+            res = h.getresponse()
+        except socket.timeout as e:
+            logging.error('---- timeout ---- %s',self.institution.description)
+            return None,''
         response = res.read().decode('ascii', 'ignore')
         logging.debug('---- response ----')
         logging.debug(res.__dict__)
