@@ -8,14 +8,16 @@ except ImportError:
     from StringIO import StringIO
 
 from ofxclient.client import Client
-from multiprocessing import Pool
+from multiprocessing import Pool, Array
 import time
 
-
-def do_download(a_days):
-    a,days = a_days
-    ofx = a.download(days=days).read()
+# This is used to synchronize the threads during parallel download
+done = Array('h',100)
+def do_download(a):
+    ofx = a.download(days=a.days).read()
     stripped = ofx.partition('<OFX>')[2].partition('</OFX>')[0]
+    print('->>{} DONE'.format(a.description.strip()))
+    done[a.ii]=1
     return stripped
 
 
@@ -26,7 +28,6 @@ def combined_download(accounts, days=60, do_parallel=1):
     as well as an optional 'days' specifier which defaults to 60
     set do_parallel to 0 to no download all accounts simultaneously.
     """
-
     client = Client(institution=None)
     out_file = StringIO()
     out_file.write(client.header())
@@ -46,11 +47,17 @@ def combined_download(accounts, days=60, do_parallel=1):
             out_file.write(stripped)
     else:
         print("Downloading in parallel")
-        for a in accounts:
+        for ii,a in enumerate(accounts):
             print('    {} from {} {}'.format(a.description,a.institution.org,a.broker_id if hasattr(a,'broker_id') else ''))
-        res = pool.map_async(do_download,zip(accounts,[days]*len(accounts)))
+            a.days = days
+            a.ii = ii
+        res = pool.map_async(do_download,accounts)
+        ii=0
         while not res.ready():
             res.wait(1)
+            if ii%10==0: print("Waiting for:" + ', '.join([a.description for a in accounts if done[a.ii] == 0]))
+            else: print('.',end='')
+            ii+=1
         out_list = res.get()
         stripped = '\n'.join(out_list)
         out_file.write(stripped)
