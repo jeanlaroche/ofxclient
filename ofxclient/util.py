@@ -36,7 +36,6 @@ def combined_download(accounts, days=60, do_parallel=1):
     out_file.write(client.header())
     out_file.write('<OFX>')
 
-    pool = Pool(12)
     print("Starting at {}".format(time.asctime()))
     t_start = time.time()
 
@@ -49,6 +48,7 @@ def combined_download(accounts, days=60, do_parallel=1):
             stripped = ofx.partition('<OFX>')[2].partition('</OFX>')[0]
             out_file.write(stripped)
     else:
+        pool = Pool(12)
         print("Downloading in parallel")
         for ii,a in enumerate(accounts):
             print('    {} from {} {}'.format(a.description,a.institution.org,a.broker_id if hasattr(a,'broker_id') else ''))
