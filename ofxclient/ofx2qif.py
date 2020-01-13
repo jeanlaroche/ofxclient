@@ -49,19 +49,29 @@ def ofxToQif(ofxFile,accountName="",accountType=""):
 
 def printOfx(filename):
     from pprint import pprint
-    with open(filename) as f:
-        ofx = OfxParser.parse(f)
+    if isinstance(filename,str):
+        with open(filename) as f:
+            ofx = OfxParser.parse(f)
+    else:
+        ofx = OfxParser.parse(filename)
     # print(vars(ofx.account))
     for account in ofx.accounts:
         inst = account.brokerid if hasattr(account,'brokerid') else account.institution.organization
         print("Account: {} {} {}".format(account.account_id,account.account_type,inst))
-        # for tr in account.statement.transactions:
-        #     pprint(vars(tr))
         print('    {} transactions'.format(len(account.statement.transactions)))
-        if hasattr(account.statement,'available_cash'):
+        try:
+            if not hasattr(account.statement,'end_date'): account.statement.end_date = 'No Date'
             print("    Cash {} as of {}".format(account.statement.available_cash,str(account.statement.end_date)))
-        if hasattr(account.statement,'balance'):
+        except:
+            pass
+        try:
+            print("    Market Value {} as of {}".format(account.statement.positions[-1].market_value,str(account.statement.positions[-1].date)))
+        except:
+            pass
+        try:
             print("    Balance {} as of {}".format(account.statement.balance,str(account.statement.balance_date)))
+        except:
+            pass
 
 if __name__ == '__main__':
     import argparse

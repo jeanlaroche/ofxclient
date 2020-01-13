@@ -51,9 +51,9 @@ def run():
             if args.account:
                 a = GlobalConfig.account(args.account)
                 ofxdata = a.download(days=args.download_days)
+                args.download.write(ofxdata.read().encode())
             else:
-                ofxdata = combined_download(accounts, days=args.download_days)
-            args.download.write(ofxdata.read().encode())
+                combined_download(accounts, days=args.download_days)
             if args.open:
                 open_with_ofx_handler(args.download.name)
             sys.exit(0)
@@ -88,14 +88,9 @@ def main_menu(args):
                 if len(choice) > 1:
                     # In case we do D1,2,3,4,5
                     indices = choice[1:].split(',')
-                    ofxdata = combined_download([accounts[int(ii)] for ii in indices], days=args.download_days)
+                    combined_download([accounts[int(ii)] for ii in indices if ii], days=args.download_days)
                 else:
-                    ofxdata = combined_download(accounts, days=args.download_days)
-                wrote = write_and_handle_download(
-                    ofxdata,
-                    'combined_download.ofx'
-                )
-                print("wrote: %s" % wrote)
+                    combined_download(accounts, days=args.download_days)
                 return
         elif choice in ['q', '']:
             return
@@ -178,7 +173,7 @@ def view_account_menu(account, args):
         if choice == 'd':
             out = account.download(days=args.download_days)
             wrote = write_and_handle_download(out,
-                                              "%s.ofx" % account.local_id())
+                                              "%s.ofx" % account.description)
             print("wrote: %s" % wrote)
         return
 
@@ -255,6 +250,7 @@ def client_args_for_bank(bank_info, ofx_version):
     return client_args
 
 def write_and_handle_download(ofx_data, name):
+    name = name.replace(' ','_')
     outfile = io.open(name, 'w')
     outfile.write(ofx_data.read())
     outfile.close()
