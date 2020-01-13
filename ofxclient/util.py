@@ -10,8 +10,6 @@ except ImportError:
 from ofxclient.client import Client
 from multiprocessing import Pool, Array
 import time
-import io
-import os
 
 # This is used to synchronize the threads during parallel download
 done = Array('h',100)
@@ -34,6 +32,9 @@ def combined_download(accounts, days=60, do_parallel=1):
     set do_parallel to 0 to no download all accounts simultaneously.
     """
     client = Client(institution=None)
+    out_file = StringIO()
+    out_file.write(client.header())
+    out_file.write('<OFX>')
 
     print("Starting at {}".format(time.asctime()))
     t_start = time.time()
@@ -43,12 +44,8 @@ def combined_download(accounts, days=60, do_parallel=1):
         for a in accounts:
             print('    {}'.format(a.description))
             ofx = a.download(days=days).read()
-            name = a.description.replace(' ', '_')+'.ofx'
-            outfile = io.open(name, 'w')
-            outfile.write(ofx)
-            outfile.close()
-            print("Wrote ", os.path.abspath(name))
-            print("______________________________")
+            stripped = ofx.partition('<OFX>')[2].partition('</OFX>')[0]
+            out_file.write(stripped)
     else:
         pool = Pool(12)
         print("Downloading in parallel")
@@ -65,16 +62,19 @@ def combined_download(accounts, days=60, do_parallel=1):
             ii+=1
         out_list = res.get()
         from ofxclient.ofx2qif import printOfx
+        stripped = []
         for ii,ofx in enumerate(out_list):
             if not len(ofx): continue
             f = StringIO(ofx)
             print("Account {}".format(accounts[ii].description))
             printOfx(f)
-            name = accounts[ii].description.replace(' ', '_')+'.ofx'
-            outfile = io.open(name, 'w')
-            outfile.write(ofx)
-            outfile.close()
-            print("Wrote ", os.path.abspath(name))
-            print("______________________________")
+            stripped.append(ofx.partition('<OFX>')[2].partition('</OFX>')[0])
+        stripped = '\n'.join(stripped)
+        out_file.write(stripped)
     t_end = time.time()
     print('Done. {:.0f} seconds elapsed...'.format(t_end-t_start))
+
+    out_file.write("</OFX>")
+    out_file.seek(0)
+
+    return out_file

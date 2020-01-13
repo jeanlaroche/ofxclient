@@ -51,9 +51,9 @@ def run():
             if args.account:
                 a = GlobalConfig.account(args.account)
                 ofxdata = a.download(days=args.download_days)
-                args.download.write(ofxdata.read().encode())
             else:
-                combined_download(accounts, days=args.download_days)
+                ofxdata = combined_download(accounts, days=args.download_days)
+            args.download.write(ofxdata.read().encode())
             if args.open:
                 open_with_ofx_handler(args.download.name)
             sys.exit(0)
@@ -88,9 +88,14 @@ def main_menu(args):
                 if len(choice) > 1:
                     # In case we do D1,2,3,4,5
                     indices = choice[1:].split(',')
-                    combined_download([accounts[int(ii)] for ii in indices if ii], days=args.download_days)
+                    ofxdata = combined_download([accounts[int(ii)] for ii in indices], days=args.download_days)
                 else:
-                    combined_download(accounts, days=args.download_days)
+                    ofxdata = combined_download(accounts, days=args.download_days)
+                wrote = write_and_handle_download(
+                    ofxdata,
+                    'combined_download.ofx'
+                )
+                print("wrote: %s" % wrote)
                 return
         elif choice in ['q', '']:
             return
