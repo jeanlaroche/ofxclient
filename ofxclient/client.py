@@ -25,7 +25,7 @@ DEFAULT_ACCEPT = '*/*, application/x-ofx'
 
 LINE_ENDING = "\r\n"
 
-timeout = 6
+timeout = 150
 
 def ofx_uid():
     return str(uuid.uuid4().hex)
