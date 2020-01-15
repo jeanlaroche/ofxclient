@@ -18,10 +18,6 @@ import os
 done = Array('h',100)
 def do_download(a):
     ofx = a.download(days=a.days).read()
-    # if len(ofx):
-    #     f=StringIO(ofx)
-    #     from ofxclient.ofx2qif import printOfx
-    #     printOfx(f)
     print('->>{} DONE'.format(a.description.strip()))
     done[a.ii]=1
     return ofx
@@ -90,7 +86,6 @@ def combined_download(accounts, days=60, do_parallel=1):
             else: print('.',end='')
             ii+=1
         out_list = res.get()
-        from ofxclient.ofx2qif import printOfx
         for ii,ofx in enumerate(out_list):
             output_account(accounts[ii],ofx)
     t_end = time.time()

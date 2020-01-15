@@ -101,6 +101,7 @@ def main_menu(args):
 
 def add_account_menu(args):
     menu_title("Add account")
+    accounts = GlobalConfig.accounts()
     while 1:
         print('------')
         print('Notice')
@@ -111,25 +112,44 @@ def add_account_menu(args):
         print('')
         print('You will be sending your bank name to this website.')
         print('------')
-        query = prompt('bank name eg. "express" (enter to exit)> ')
+        query = prompt('bank name eg. "express" or index of one of your banks (enter to exit)> ')
         if query.lower() in ['']:
             return
 
-        found = OFXHome.search(query)
-        if not found:
-            error("No banks found")
-            continue
-
-        while 1:
-            for idx, bank in enumerate(found):
-                menu_item(idx, bank['name'])
-            choice = prompt().lower()
-            if choice in ['q', '']:
+        try:
+            # IF the user wants to re-add a bank that's already in the ini file (you might want to do that to override
+            # the info provided by ofxhome which sometimes isn't accurate (citibank for example)), create a bank_info
+            # dict based on what's already in the .ini file.
+            idx = int(query)
+            ca = accounts[idx].institution.client_args
+            bank_info = {}
+            bank_info['fid'] = accounts[idx].institution.id
+            bank_info['org'] = accounts[idx].institution.org
+            bank_info['url'] = accounts[idx].institution.url
+            bank_info['brokerid'] = accounts[idx].institution.broker_id
+            bank_info.update(ca)
+            args.ofx_version = bank_info['ofx_version']
+            bank_info['name'] = accounts[idx].description
+            if login_check_menu(bank_info, args):
                 return
-            elif int(choice) < len(found):
-                bank = OFXHome.lookup(found[int(choice)]['id'])
-                if login_check_menu(bank, args):
+        except:
+            found = OFXHome.search(query)
+            if not found:
+                error("No banks found")
+                continue
+
+            while 1:
+                for idx, bank in enumerate(found):
+                    menu_item(idx, bank['name'])
+                choice = prompt().lower()
+                if choice in ['q', '']:
                     return
+                elif int(choice) < len(found):
+                    bank = OFXHome.lookup(found[int(choice)]['id'])
+
+                    if login_check_menu(bank, args):
+                        return
+
 
 
 def view_account_menu(account, args):
@@ -171,8 +191,9 @@ def view_account_menu(account, args):
         menu_item('D', 'Download')
         choice = prompt().lower()
         if choice == 'd':
-            out = account.download(days=args.download_days)
-            wrote = write_and_handle_download(out,
+            # out = account.download(days=args.download_days)
+            ofx_data = combined_download([account,], days=args.download_days, do_parallel=0)
+            wrote = write_and_handle_download(ofx_data,
                                               "%s.ofx" % account.description)
             print("wrote: %s" % wrote)
         return
@@ -250,7 +271,7 @@ def client_args_for_bank(bank_info, ofx_version):
     return client_args
 
 def write_and_handle_download(ofx_data, name):
-    name = name.replace(' ','_')
+    name = name.replace(' ','_').replace('*','_')
     outfile = io.open(name, 'w')
     outfile.write(ofx_data.read())
     outfile.close()
