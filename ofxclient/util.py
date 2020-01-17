@@ -79,7 +79,7 @@ def combined_download(accounts, days=60, do_parallel=1):
         except:
             pass
 
-        outDir = '.'
+        outDir = os.getenv('OFX_OUTDIR',os.getenv('HOME','.'))
         if idx is None:
             all_files_written = glob.glob(os.path.join(outDir,'*.ofx'))
             all_indices = [re.findall('(\d+)_',os.path.basename(file)) for file in all_files_written]

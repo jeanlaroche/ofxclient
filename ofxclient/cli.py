@@ -21,14 +21,18 @@ DOWNLOAD_DAYS = 30
 
 GlobalConfig = None
 
+help = '''
+Ofxclient, setup and download your transactions from your banking accounts.
+See https://captin411.github.io/ofxclient/ for the full doc
+Setup the OFX_OUTDIR env variable to define where your output OFX files should be
+Setup the OFX_CONFIG env variable to define where your config file should be
+'''
 
 def run():
     global GlobalConfig
 
-    parser = argparse.ArgumentParser(prog='ofxclient')
-    parser.add_argument('-a', '--account')
-    parser.add_argument('-d', '--download', type=argparse.FileType('wb', 0))
-    parser.add_argument('-o', '--open', action='store_true')
+    parser = argparse.ArgumentParser(prog='ofxclient',description=help,formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-d', '--download', help = 'Download from nth account in .ini file, can be 5 or 5,7,8 etc', default = '')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-c', '--config', help='config file path')
     parser.add_argument('--download-days', default=DOWNLOAD_DAYS, type=int, help='number of days to download (default: %s)' % DOWNLOAD_DAYS)
@@ -48,18 +52,11 @@ def run():
 
     if args.download:
         if accounts:
-            if args.account:
-                a = GlobalConfig.account(args.account)
-                ofxdata = a.download(days=args.download_days)
-                args.download.write(ofxdata.read().encode())
-            else:
-                combined_download(accounts, days=args.download_days)
-            if args.open:
-                open_with_ofx_handler(args.download.name)
+            account = [accounts[int(i)] for i in args.download.split(',')]
+            combined_download(account, days=args.download_days)
             sys.exit(0)
         else:
             print("no accounts configured")
-
     main_menu(args)
 
 

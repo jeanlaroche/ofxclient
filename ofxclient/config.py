@@ -23,7 +23,7 @@ import sys
 from ofxclient.account import Account
 
 try:
-    DEFAULT_CONFIG = os.path.expanduser(os.path.join('~', 'ofxclient.ini'))
+    DEFAULT_CONFIG = os.getenv('OFX_CONFIG',os.path.expanduser(os.path.join('~', 'ofxclient.ini')))
 except:
     DEFAULT_CONFIG = None
 
