@@ -36,52 +36,65 @@ def combined_download(accounts, days=60, do_parallel=1):
     print("Starting at {}".format(time.asctime()))
     t_start = time.time()
 
-    def output_account(account,ofx_str):
-        if not len(ofx_str): return
+    def prune_transactions(ofx_str):
+        if not len(ofx_str): return None,ofx_str,0
         f = StringIO(ofx_str)
         ofx = OfxParser.parse(f)
-        a=ofx.account
-        inst = account.description
+        a = ofx.account
+        if a.type == 3:
+            return ofx, ofx_str, len(a.statement.transactions)
         days_ago = datetime.datetime.now() - datetime.timedelta(days=days)
         new_transactions = []
         # Some banks (citibank for example) simply ignore the STDATE value and return everything.
         for trans in a.statement.transactions:
-            if trans.date >= days_ago:
+            if getattr(trans,'date',datetime.datetime(1900,1,1)) >= days_ago:
                 new_transactions.append(trans)
+                continue
+            if getattr(trans, 'settleDate', datetime.datetime(1900,1,1)) >= days_ago:
+                new_transactions.append(trans)
+                continue
+
         a.statement.transactions = new_transactions
+        return ofx,None,len(a.statement.transactions)
+
+    def output_account(account,ofx,ofx_str):
+        a=ofx.account
+        inst = account.description
         p = OfxPrinter(ofx,None)
-        num_trans = len(a.statement.transactions)
-        if num_trans:
-            bal = 0
-            bal_date = ''
-            try:
-                if not hasattr(a.statement, 'end_date'): a.statement.end_date = 'No Date'
-                bal,bal_date = a.statement.available_cash,str(a.statement.end_date)
-            except:
-                pass
-            try:
-                bal,bal_date = a.statement.positions[-1].market_value,str(a.statement.positions[-1].date)
-            except:
-                pass
-            try:
-                bal, bal_date = a.statement.balance, str(a.statement.balance_date)
-            except:
-                pass
-            name = account.description.replace(' ', '_') + '.ofx'
+        balance = 0
+        bal_date = ''
+        try:
+            if not hasattr(a.statement, 'end_date'): a.statement.end_date = 'No Date'
+            balance,bal_date = a.statement.available_cash,str(a.statement.end_date)
+        except:
+            pass
+        try:
+            balance,bal_date = a.statement.positions[-1].market_value,str(a.statement.positions[-1].date)
+        except:
+            pass
+        try:
+            balance, bal_date = a.statement.balance, str(a.statement.balance_date)
+        except:
+            pass
+        name = account.description.replace(' ', '_') + '.ofx'
+        if ofx_str is None:
             outfile = io.open(name, 'w')
             p.writeToFile(outfile)
-            # outfile.write(ofx_str)
             outfile.close()
-            print(' {} {} trans. Balance {} as of {} -> {}'.format(inst,num_trans,bal,bal_date,name))
         else:
-            print(' {} {} transactions'.format(inst,num_trans))
+            with open(name,'w') as f:
+                f.write(ofx_str)
+
+        print('    {:<40} {:>2} trans. Balance {:>10} as of {} -> {}'.format(inst, len(a.statement.transactions), balance,
+                                                                           bal_date, name))
 
     if not do_parallel:
         print("Downloading")
         for a in accounts:
             print('    {}'.format(a.description))
             ofx = a.download(days=days).read()
-            output_account(a,ofx)
+            ofx,ofx_str,n = prune_transactions(ofx)
+            output_account(a,ofx,ofx_str)
     else:
         pool = Pool(12)
         print("Downloading in parallel")
@@ -96,7 +109,10 @@ def combined_download(accounts, days=60, do_parallel=1):
             else: print('.',end='')
             ii+=1
         out_list = res.get()
+        print('\nDone downloading')
         for ii,ofx in enumerate(out_list):
-            output_account(accounts[ii],ofx)
+            ofx,ofx_str,n = prune_transactions(ofx,)
+            if n != 0:
+                output_account(accounts[ii],ofx,ofx_str)
     t_end = time.time()
     print('Done. {:.0f} seconds elapsed...'.format(t_end-t_start))
