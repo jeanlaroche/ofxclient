@@ -14,6 +14,8 @@ import time
 import datetime
 import io
 import os
+import glob
+import re
 
 # This is used to synchronize the threads during parallel download
 done = Array('h',100)
@@ -57,7 +59,7 @@ def combined_download(accounts, days=60, do_parallel=1):
         a.statement.transactions = new_transactions
         return ofx,None,len(a.statement.transactions)
 
-    def output_account(account,ofx,ofx_str):
+    def output_account(account,ofx,ofx_str,idx):
         a=ofx.account
         inst = account.description
         p = OfxPrinter(ofx,None)
@@ -76,7 +78,14 @@ def combined_download(accounts, days=60, do_parallel=1):
             balance, bal_date = a.statement.balance, str(a.statement.balance_date)
         except:
             pass
-        name = account.description.replace(' ', '_') + '.ofx'
+
+        outDir = '.'
+        if idx is None:
+            all_files_written = glob.glob(os.path.join(outDir,'*.ofx'))
+            all_indices = [re.findall('(\d+)_',os.path.basename(file)) for file in all_files_written]
+            all_indices = [int(item[0]) for item in all_indices if len(item)]+[0]
+            idx = (max(all_indices)+1)%100
+        name = os.path.join(outDir,'{:02d}_'.format(idx)+account.description.replace(' ', '_') + '.ofx')
         if ofx_str is None:
             outfile = io.open(name, 'w')
             p.writeToFile(outfile)
@@ -87,14 +96,16 @@ def combined_download(accounts, days=60, do_parallel=1):
 
         print('    {:<40} {:>2} trans. Balance {:>10} as of {} -> {}'.format(inst, len(a.statement.transactions), balance,
                                                                            bal_date, name))
+        return idx
 
     if not do_parallel:
         print("Downloading")
+        idx = None
         for a in accounts:
             print('    {}'.format(a.description))
             ofx = a.download(days=days).read()
             ofx,ofx_str,n = prune_transactions(ofx)
-            output_account(a,ofx,ofx_str)
+            idx=output_account(a,ofx,ofx_str,idx)
     else:
         pool = Pool(12)
         print("Downloading in parallel")
@@ -110,9 +121,10 @@ def combined_download(accounts, days=60, do_parallel=1):
             ii+=1
         out_list = res.get()
         print('\nDone downloading')
+        idx = None
         for ii,ofx in enumerate(out_list):
             ofx,ofx_str,n = prune_transactions(ofx,)
             if n != 0:
-                output_account(accounts[ii],ofx,ofx_str)
+                idx = output_account(accounts[ii],ofx,ofx_str,idx)
     t_end = time.time()
     print('Done. {:.0f} seconds elapsed...'.format(t_end-t_start))
