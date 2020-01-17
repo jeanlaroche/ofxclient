@@ -191,11 +191,7 @@ def view_account_menu(account, args):
         menu_item('D', 'Download')
         choice = prompt().lower()
         if choice == 'd':
-            # out = account.download(days=args.download_days)
-            ofx_data = combined_download([account,], days=args.download_days, do_parallel=0)
-            wrote = write_and_handle_download(ofx_data,
-                                              "%s.ofx" % account.description)
-            print("wrote: %s" % wrote)
+            combined_download([account,], days=args.download_days, do_parallel=0)
         return
 
 

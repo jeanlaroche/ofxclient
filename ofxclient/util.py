@@ -8,9 +8,10 @@ except ImportError:
     from StringIO import StringIO
 
 from ofxclient.client import Client
-from ofxparse import OfxParser
+from ofxparse import OfxParser, OfxPrinter
 from multiprocessing import Pool, Array
 import time
+import datetime
 import io
 import os
 
@@ -41,8 +42,16 @@ def combined_download(accounts, days=60, do_parallel=1):
         ofx = OfxParser.parse(f)
         a=ofx.account
         inst = account.description
-        numTrans = len(a.statement.transactions)
-        if numTrans:
+        days_ago = datetime.datetime.now() - datetime.timedelta(days=days)
+        new_transactions = []
+        # Some banks (citibank for example) simply ignore the STDATE value and return everything.
+        for trans in a.statement.transactions:
+            if trans.date >= days_ago:
+                new_transactions.append(trans)
+        a.statement.transactions = new_transactions
+        p = OfxPrinter(ofx,None)
+        num_trans = len(a.statement.transactions)
+        if num_trans:
             bal = 0
             bal_date = ''
             try:
@@ -60,11 +69,12 @@ def combined_download(accounts, days=60, do_parallel=1):
                 pass
             name = account.description.replace(' ', '_') + '.ofx'
             outfile = io.open(name, 'w')
-            outfile.write(ofx_str)
+            p.writeToFile(outfile)
+            # outfile.write(ofx_str)
             outfile.close()
-            print(' {} {} trans. Balance {} as of {} -> {}'.format(inst,numTrans,bal,bal_date,name))
+            print(' {} {} trans. Balance {} as of {} -> {}'.format(inst,num_trans,bal,bal_date,name))
         else:
-            print(' {} {} transactions'.format(inst,numTrans))
+            print(' {} {} transactions'.format(inst,num_trans))
 
     if not do_parallel:
         print("Downloading")
