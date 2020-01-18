@@ -87,6 +87,24 @@ def combined_download(accounts, days=60, do_parallel=1):
             all_indices = [int(item[0]) for item in all_indices if len(item)]+[0]
             idx = (max(all_indices)+1)%100
         name = os.path.join(outDir,'{:02d}_'.format(idx)+account.description.replace(' ', '_') + '.ofx')
+        for ii in range(1,100):
+            prev_idx = (idx-ii+100)%100
+            prev_name = os.path.join(outDir,'{:02d}_'.format(prev_idx)+account.description.replace(' ', '_') + '.ofx')
+            if os.path.exists(prev_name): break
+        else:
+            prev_name = ''
+
+        num_new_trans = 0
+        if prev_name:
+            with open(prev_name) as f:
+                prev_ofx = OfxParser.parse(f)
+                prev_a = prev_ofx.account
+                try:
+                    prev_max_date = max([t.date for t in prev_a.statement.transactions])
+                    num_new_trans = len([t for t in a.statement.transactions if t.date > prev_max_date])
+                except:
+                    num_new_trans = -1
+
         if ofx_str is None:
             outfile = io.open(name, 'w')
             p.writeToFile(outfile)
@@ -96,8 +114,8 @@ def combined_download(accounts, days=60, do_parallel=1):
                 f.write(ofx_str)
 
         if hasattr(bal_date,'strftime'): bal_date = bal_date.strftime('%Y-%b-%d')
-        print('    {:<25} {:>2} trans. Bal. {:>10} as of {} -> {}'.format(inst, len(a.statement.transactions), balance,
-                                                                           bal_date, name))
+        print('    {:<25} {:>2}/{}  trans. Bal. {:>10} as of {} -> {}'.format(inst, len(a.statement.transactions), num_new_trans,
+                                                                        balance, bal_date, name))
         return idx
 
     if not do_parallel:

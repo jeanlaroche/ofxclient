@@ -35,7 +35,7 @@ def run():
     parser.add_argument('-d', '--download', help = 'Download from nth account in .ini file, can be 5 or 5,7,8 etc', default = '')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-c', '--config', help='config file path')
-    parser.add_argument('--download-days', default=DOWNLOAD_DAYS, type=int, help='number of days to download (default: %s)' % DOWNLOAD_DAYS)
+    parser.add_argument('-dd','--download-days', default=DOWNLOAD_DAYS, type=int, help='number of days to download (default: %s)' % DOWNLOAD_DAYS)
     parser.add_argument('--ofx-version', default=DEFAULT_OFX_VERSION, type=int, help='ofx version to use for new accounts (default: %s)' % DEFAULT_OFX_VERSION)
     args = parser.parse_args()
 
