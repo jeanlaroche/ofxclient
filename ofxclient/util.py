@@ -67,19 +67,20 @@ def combined_download(accounts, days=60, do_parallel=1):
         bal_date = ''
         try:
             if not hasattr(a.statement, 'end_date'): a.statement.end_date = 'No Date'
-            balance,bal_date = a.statement.available_cash,str(a.statement.end_date)
+            balance,bal_date = a.statement.available_cash,a.statement.end_date
         except:
             pass
         try:
-            balance,bal_date = a.statement.positions[-1].market_value,str(a.statement.positions[-1].date)
+            balance,bal_date = a.statement.positions[-1].market_value,a.statement.positions[-1].date
         except:
             pass
         try:
-            balance, bal_date = a.statement.balance, str(a.statement.balance_date)
+            balance, bal_date = a.statement.balance, a.statement.balance_date
         except:
             pass
 
         outDir = os.getenv('OFX_OUTDIR',os.getenv('HOME','.'))
+        if not os.path.exists(outDir): os.mkdir(outDir)
         if idx is None:
             all_files_written = glob.glob(os.path.join(outDir,'*.ofx'))
             all_indices = [re.findall('(\d+)_',os.path.basename(file)) for file in all_files_written]
@@ -94,7 +95,8 @@ def combined_download(accounts, days=60, do_parallel=1):
             with open(name,'w') as f:
                 f.write(ofx_str)
 
-        print('    {:<40} {:>2} trans. Balance {:>10} as of {} -> {}'.format(inst, len(a.statement.transactions), balance,
+        if hasattr(bal_date,'strftime'): bal_date = bal_date.strftime('%Y-%b-%d')
+        print('    {:<25} {:>2} trans. Bal. {:>10} as of {} -> {}'.format(inst, len(a.statement.transactions), balance,
                                                                            bal_date, name))
         return idx
 
