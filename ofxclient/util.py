@@ -100,8 +100,15 @@ def combined_download(accounts, days=60, do_parallel=1):
                 prev_ofx = OfxParser.parse(f)
                 prev_a = prev_ofx.account
                 try:
-                    prev_max_date = max([t.date for t in prev_a.statement.transactions])
-                    num_new_trans = len([t for t in a.statement.transactions if t.date > prev_max_date])
+                    if 0:
+                        # This counts new transactions by date.
+                        prev_max_date = max([t.date for t in prev_a.statement.transactions])
+                        num_new_trans = len([t for t in a.statement.transactions if t.date > prev_max_date])
+                    else:
+                        # This counts transactions that are in the new one, but not in the previous one.
+                        all_new_ids = [t.id for t in a.statement.transactions]
+                        all_prev_ids = [t.id for t in prev_a.statement.transactions]
+                        num_new_trans = len(set(all_new_ids)-set(all_prev_ids))
                 except:
                     num_new_trans = -1
 
