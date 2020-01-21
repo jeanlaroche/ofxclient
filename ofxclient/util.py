@@ -94,7 +94,7 @@ def combined_download(accounts, days=60, do_parallel=1):
         else:
             prev_name = ''
 
-        num_new_trans = 0
+        num_new_trans = len(a.statement.transactions)
         if prev_name:
             with open(prev_name) as f:
                 prev_ofx = OfxParser.parse(f)
@@ -111,6 +111,8 @@ def combined_download(accounts, days=60, do_parallel=1):
                         num_new_trans = len(set(all_new_ids)-set(all_prev_ids))
                 except:
                     num_new_trans = -1
+        if num_new_trans == 0:
+            return idx
 
         if ofx_str is None:
             outfile = io.open(name, 'w')
