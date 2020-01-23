@@ -9,21 +9,18 @@ except ImportError:
 
 from ofxclient.client import Client
 from ofxparse import OfxParser, OfxPrinter
-from multiprocessing import Pool, Array
 import time
 import datetime
 import io
 import os
 import glob
 import re
+from threading import Thread
 
-# This is used to synchronize the threads during parallel download
-done = Array('h',100)
-def do_download(a):
+def do_download(a,all_results):
     ofx = a.download(days=a.days).read()
     print('->>{} DONE'.format(a.description.strip()))
-    done[a.ii]=1
-    return ofx
+    all_results[a.ii] = ofx
 
 
 def combined_download(accounts, days=60, do_parallel=1):
@@ -136,19 +133,21 @@ def combined_download(accounts, days=60, do_parallel=1):
             ofx,ofx_str,n = prune_transactions(ofx)
             idx=output_account(a,ofx,ofx_str,idx)
     else:
-        pool = Pool(12)
         print("Downloading in parallel")
+        out_list = [[]]*len(accounts)
         for ii,a in enumerate(accounts):
             a.days = days
             a.ii = ii
-        res = pool.map_async(do_download,accounts)
+            a.thread = Thread(target=do_download,args=(a,out_list))
+            a.thread.start()
+
+        # It would be cleaner to use semaphores here, but this works OK.
         ii=0
-        while not res.ready():
-            res.wait(1)
-            if ii%10==0: print("Waiting for:" + ', '.join([a.description for a in accounts if done[a.ii] == 0]))
+        while any([a.thread.is_alive() for a in accounts]):
+            time.sleep(1)
+            if ii%10==0: print("Waiting for:" + ', '.join([a.description for a in accounts if a.thread.isAlive()]))
             else: print('.',end='')
             ii+=1
-        out_list = res.get()
         print('\nDone downloading')
         idx = None
         for ii,ofx in enumerate(out_list):
