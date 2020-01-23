@@ -138,17 +138,21 @@ def combined_download(accounts, days=60, do_parallel=1):
         for ii,a in enumerate(accounts):
             a.days = days
             a.ii = ii
-            a.thread = Thread(target=do_download,args=(a,out_list))
+            a.thread = Thread(target=do_download,args=(a,out_list),daemon=True)
             a.thread.start()
 
         # It would be cleaner to use semaphores here, but this works OK.
         ii=0
-        while any([a.thread.is_alive() for a in accounts]):
-            time.sleep(1)
-            if ii%10==0: print("Waiting for:" + ', '.join([a.description for a in accounts if a.thread.isAlive()]))
-            else: print('.',end='')
-            ii+=1
-        print('\nDone downloading')
+        try:
+            while any([a.thread.is_alive() for a in accounts]):
+                time.sleep(1)
+                if ii%10==0: print("Waiting for:" + ', '.join([a.description for a in accounts if a.thread.isAlive()]))
+                else: print('.',end='')
+                ii+=1
+            print('\nDone downloading')
+        except KeyboardInterrupt:
+            print('\nAborting')
+            pass
         idx = None
         for ii,ofx in enumerate(out_list):
             ofx,ofx_str,n = prune_transactions(ofx,)
