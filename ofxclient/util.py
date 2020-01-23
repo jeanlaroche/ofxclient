@@ -19,7 +19,7 @@ from threading import Thread
 
 def do_download(a,all_results):
     ofx = a.download(days=a.days).read()
-    print('->>{} DONE'.format(a.description.strip()))
+    #print('->>{} DONE'.format(a.description.strip()))
     all_results[a.ii] = ofx
 
 
@@ -109,6 +109,7 @@ def combined_download(accounts, days=60, do_parallel=1):
                 except:
                     num_new_trans = -1
         if num_new_trans == 0:
+            print('    {:<25} No new transactions Bal. {:>10} as of {}'.format(inst,balance, bal_date))
             return idx
 
         if ofx_str is None:
@@ -143,20 +144,28 @@ def combined_download(accounts, days=60, do_parallel=1):
 
         # It would be cleaner to use semaphores here, but this works OK.
         ii=0
-        try:
-            while any([a.thread.is_alive() for a in accounts]):
-                time.sleep(1)
-                if ii%10==0: print("Waiting for:" + ', '.join([a.description for a in accounts if a.thread.isAlive()]))
-                else: print('.',end='')
-                ii+=1
-            print('\nDone downloading')
-        except KeyboardInterrupt:
-            print('\nAborting')
-            pass
+        # try:
+        #     while any([a.thread.is_alive() for a in accounts]):
+        #         time.sleep(1)
+        #         if ii%10==0: print("Waiting for:" + ', '.join([a.description for a in accounts if a.thread.isAlive()]))
+        #         else: print('.',end='')
+        #         ii+=1
+        #     print('\nDone downloading')
+        # except KeyboardInterrupt:
+        #     print('\nAborting')
+        #     pass
         idx = None
-        for ii,ofx in enumerate(out_list):
-            ofx,ofx_str,n = prune_transactions(ofx,)
-            if n != 0:
-                idx = output_account(accounts[ii],ofx,ofx_str,idx)
+        while 1:
+            for ii,a in enumerate(accounts):
+                ofx = out_list[ii]
+                if not len(ofx): continue
+                ofx,ofx_str,n = prune_transactions(ofx)
+                if n != 0:
+                    idx = output_account(accounts[ii],ofx,ofx_str,idx)
+                else:
+                    print('    {:<25} No new transactions'.format(a.description))
+                out_list[ii] = ''
+            if all([not a.thread.is_alive() for a in accounts]): break
+            time.sleep(1)
     t_end = time.time()
     print('Done. {:.0f} seconds elapsed...'.format(t_end-t_start))
