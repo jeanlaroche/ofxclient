@@ -58,6 +58,12 @@ def printOfx(filename):
     for account in ofx.accounts:
         inst = account.brokerid if hasattr(account,'brokerid') else account.institution.organization
         print("Account: {} {} {}".format(account.account_id,account.account_type,inst))
+        if account.type == 1:
+            for tr in account.statement.transactions:
+                print("       * {} {} {}".format(tr.date,tr.amount,tr.memo))
+        if account.type == 3:
+            for tr in account.statement.transactions:
+                print("       * {} {} {} {} @ ${}".format(tr.settleDate,tr.total,tr.type,tr.units,tr.unit_price))
         print('    {} transactions'.format(len(account.statement.transactions)))
         try:
             if not hasattr(account.statement,'end_date'): account.statement.end_date = 'No Date'
