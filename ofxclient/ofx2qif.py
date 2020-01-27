@@ -64,6 +64,10 @@ def printOfx(filename):
         if account.type == 3:
             for tr in account.statement.transactions:
                 print("       * {} {} {} {} @ ${}".format(tr.settleDate,tr.total,tr.type,tr.units,tr.unit_price))
+            print("    Positions:")
+            for pos in account.statement.positions:
+                print("       * {} {} ${} {} @ ${}".format(pos.date,pos.security,pos.market_value,pos.units,pos.unit_price))
+
         print('    {} transactions'.format(len(account.statement.transactions)))
         try:
             if not hasattr(account.statement,'end_date'): account.statement.end_date = 'No Date'
