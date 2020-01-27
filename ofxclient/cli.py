@@ -15,6 +15,7 @@ from ofxclient.config import OfxConfig
 from ofxclient.institution import Institution
 from ofxclient.util import combined_download
 from ofxclient.client import DEFAULT_OFX_VERSION
+from ofxclient.ofx2qif import printOfx
 
 AUTO_OPEN_DOWNLOADS = 1
 DOWNLOAD_DAYS = 30
@@ -32,12 +33,17 @@ def run():
     global GlobalConfig
 
     parser = argparse.ArgumentParser(prog='ofxclient',description=help,formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-s', '--show', help = 'Show info from supplied ofx file')
     parser.add_argument('-d', '--download', help = 'Download from nth account in .ini file, can be 5 or 5,7,8 etc', default = '')
     parser.add_argument('-v', '--verbose', action='store_true')
-    parser.add_argument('-c', '--config', help='config file path')
+    parser.add_argument('-c', '--config', help='Use supplied config file')
     parser.add_argument('-dd','--download-days', default=DOWNLOAD_DAYS, type=int, help='number of days to download (default: %s)' % DOWNLOAD_DAYS)
     parser.add_argument('--ofx-version', default=DEFAULT_OFX_VERSION, type=int, help='ofx version to use for new accounts (default: %s)' % DEFAULT_OFX_VERSION)
     args = parser.parse_args()
+
+    if args.show:
+        printOfx(args.show)
+        sys.exit(0)
 
     if args.config:
         GlobalConfig = OfxConfig(file_name=args.config)
