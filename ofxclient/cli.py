@@ -18,7 +18,7 @@ from ofxclient.client import DEFAULT_OFX_VERSION
 from ofxclient.ofx2qif import printOfx
 
 AUTO_OPEN_DOWNLOADS = 1
-DOWNLOAD_DAYS = 30
+DOWNLOAD_DAYS = 5
 
 GlobalConfig = None
 
