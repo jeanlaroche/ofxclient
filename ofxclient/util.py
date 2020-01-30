@@ -22,6 +22,8 @@ def do_download(a,all_results):
     #print('->>{} DONE'.format(a.description.strip()))
     all_results[a.ii] = ofx
 
+def getTransDate(t):
+    return getattr(t,'date',getattr(t,'settleDate',datetime.datetime(1900,1,1)))
 
 def combined_download(accounts, days=60, do_parallel=1):
     """Download OFX files and combine them into one
@@ -46,12 +48,8 @@ def combined_download(accounts, days=60, do_parallel=1):
         new_transactions = []
         # Some banks (citibank for example) simply ignore the STDATE value and return everything.
         for trans in a.statement.transactions:
-            if getattr(trans,'date',datetime.datetime(1900,1,1)) >= days_ago:
+            if getTransDate(trans) >= days_ago:
                 new_transactions.append(trans)
-                continue
-            if getattr(trans, 'settleDate', datetime.datetime(1900,1,1)) >= days_ago:
-                new_transactions.append(trans)
-                continue
 
         a.statement.transactions = new_transactions
         return ofx,None,len(a.statement.transactions)
@@ -97,18 +95,15 @@ def combined_download(accounts, days=60, do_parallel=1):
                 prev_ofx = OfxParser.parse(f)
                 prev_a = prev_ofx.account
                 try:
-                    if 0:
-                        # This counts new transactions by date.
-                        prev_max_date = max([t.date for t in prev_a.statement.transactions])
-                        num_new_trans = len([t for t in a.statement.transactions if t.date > prev_max_date])
-                    else:
-                        # This counts transactions that are in the new one, but not in the previous one.
-                        all_new_ids = [t.id for t in a.statement.transactions]
-                        all_prev_ids = [t.id for t in prev_a.statement.transactions]
-                        num_new_trans = len(set(all_new_ids)-set(all_prev_ids))
+                    prev_max_date = max([getTransDate(t) for t in prev_a.statement.transactions])
+                    # This counts transactions that are in the new one, but not in the previous one and whose date
+                    # is later than the previous latest date.
+                    all_new_ids = [t.id for t in a.statement.transactions if getTransDate(t) > prev_max_date]
+                    all_prev_ids = [t.id for t in prev_a.statement.transactions]
+                    num_new_trans = len(set(all_new_ids)-set(all_prev_ids))
                 except:
                     num_new_trans = -1
-        if num_new_trans == 0:
+        if num_new_trans <= 0:
             print('    {:<25} No new transactions Bal. {:>10} as of {}'.format(inst,balance, bal_date))
             return idx
 
@@ -144,16 +139,6 @@ def combined_download(accounts, days=60, do_parallel=1):
 
         # It would be cleaner to use semaphores here, but this works OK.
         ii=0
-        # try:
-        #     while any([a.thread.is_alive() for a in accounts]):
-        #         time.sleep(1)
-        #         if ii%10==0: print("Waiting for:" + ', '.join([a.description for a in accounts if a.thread.isAlive()]))
-        #         else: print('.',end='')
-        #         ii+=1
-        #     print('\nDone downloading')
-        # except KeyboardInterrupt:
-        #     print('\nAborting')
-        #     pass
         idx = None
         while 1:
             for ii,a in enumerate(accounts):
