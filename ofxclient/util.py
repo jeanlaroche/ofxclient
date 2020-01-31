@@ -98,7 +98,8 @@ def combined_download(accounts, days=60, do_parallel=1):
                     prev_max_date = max([getTransDate(t) for t in prev_a.statement.transactions])
                     # This counts transactions that are in the new one, but not in the previous one and whose date
                     # is later than the previous latest date.
-                    all_new_ids = [t.id for t in a.statement.transactions if getTransDate(t) > prev_max_date]
+                    # all_new_ids = [t.id for t in a.statement.transactions if getTransDate(t) > prev_max_date]
+                    all_new_ids = [t.id for t in a.statement.transactions]
                     all_prev_ids = [t.id for t in prev_a.statement.transactions]
                     num_new_trans = len(set(all_new_ids)-set(all_prev_ids))
                 except:
