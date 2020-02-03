@@ -56,7 +56,7 @@ def printOfx(filename):
         ofx = OfxParser.parse(filename)
     # print(vars(ofx.account))
     for account in ofx.accounts:
-        inst = account.brokerid if hasattr(account,'brokerid') else account.institution.organization
+        inst = getattr(account,'brokerd',getattr(account.institution,'organization',"No name"))
         print("Account: {} {} {}".format(account.account_id,account.account_type,inst))
         if account.type == 1:
             for tr in account.statement.transactions:
