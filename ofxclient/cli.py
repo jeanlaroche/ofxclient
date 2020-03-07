@@ -16,6 +16,7 @@ from ofxclient.institution import Institution
 from ofxclient.util import combined_download
 from ofxclient.client import DEFAULT_OFX_VERSION
 from ofxclient.ofx2qif import printOfx
+import glob
 
 AUTO_OPEN_DOWNLOADS = 1
 DOWNLOAD_DAYS = 5
@@ -33,7 +34,7 @@ def run():
     global GlobalConfig
 
     parser = argparse.ArgumentParser(prog='ofxclient',description=help,formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-s', '--show', help = 'Show info from supplied ofx file')
+    parser.add_argument('-s', '--show', help = 'Show info from supplied ofx file, * for a list of all files.')
     parser.add_argument('-d', '--download', help = 'Download from nth account in .ini file, can be 5 or 5,7,8 etc', default = '')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-c', '--config', help='Use supplied config file')
@@ -42,6 +43,15 @@ def run():
     args = parser.parse_args()
 
     if args.show:
+        # if args.show == '' list all files.
+        if args.show == '*':
+            outDir = os.getenv('OFX_OUTDIR')
+            allFiles = glob.glob(os.path.join(outDir,'*.ofx'))
+            allFiles = sorted(allFiles)
+            for ii,file in enumerate(allFiles):
+                print("{:02d}: {}".format(ii,os.path.basename(file)))
+            a = int(input("Select file -> "))
+            args.show = allFiles[a]
         printOfx(args.show)
         sys.exit(0)
 
