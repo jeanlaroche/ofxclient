@@ -78,7 +78,7 @@ def combined_download(accounts, days=60, do_parallel=1):
         if not os.path.exists(outDir): os.mkdir(outDir)
         if idx is None:
             all_files_written = glob.glob(os.path.join(outDir,'*.ofx'))
-            all_indices = [re.findall('(\d+)_',os.path.basename(file)) for file in all_files_written]
+            all_indices = [re.findall('^(\d+)_',os.path.basename(file)) for file in all_files_written]
             all_indices = [int(item[0]) for item in all_indices if len(item)]+[0]
             idx = (max(all_indices)+1)%100
         name = os.path.join(outDir,'{:02d}_'.format(idx)+account.description.replace(' ', '_') + '.ofx')
