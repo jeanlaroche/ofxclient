@@ -190,3 +190,54 @@ def combine_ofx(ofx_list,idx):
     with open(name,'w') as f:
         f.write(A)
     print('Wrote {}'.format(name))
+
+def find_max_idx(outDir):
+    # Find max index of all ofx files
+    all_files_written = glob.glob(os.path.join(outDir, '*.ofx'))
+    all_indices = [re.findall('^(\d+)_', os.path.basename(file)) for file in all_files_written]
+    all_indices = [int(item[0]) for item in all_indices if len(item)] + [0]
+    idx = max(all_indices)
+    return idx
+
+def renumber_files(files,old,new):
+    # Renumber files in files from old->new (e.g. 55_this.ofx -> 25_this.ofx)
+    if old == new: return
+    for file in files:
+        new_file = file.replace('{:02d}'.format(old), '{:02d}'.format(new))
+        print("Renaming {} -> {}".format(os.path.basename(file), os.path.basename(new_file)))
+        os.rename(file,new_file)
+
+def purge_files():
+    # Removes the oldest ofx files to make room for new ones.
+    outDir = os.getenv('OFX_OUTDIR', os.getenv('HOME', '.'))
+    if not os.path.exists(outDir): return
+    idx = find_max_idx(outDir)
+    if idx < 90: return
+    # Before purging, rename files to remove any gaps in the numbering.
+    jj = 0
+    for ii in range(idx+1):
+        to_rename = glob.glob(os.path.join(outDir, '{:02d}_*.ofx'.format(ii)))
+        if not len(to_rename):
+            continue # ii increments but not jj
+        if ii==jj:
+            jj += 1
+            continue
+        renumber_files(to_rename,ii,jj)
+    # Did we make enough room to not have to purge?
+    idx = find_max_idx(outDir)
+    if idx <= 90: return
+
+    purge = 20
+    answer = input('Nearing max number of files, purge the earliest {}? ->[yes/n]'.format(purge))
+    if not answer == 'yes': return
+    for ii in range(purge):
+        to_purge = glob.glob(os.path.join(outDir, '{:02d}_*.ofx'.format(ii)))
+        for file in to_purge:
+            print("Removing {}".format(os.path.basename(file)))
+            os.remove(file)
+    for ii in range(purge,100):
+        to_rename = glob.glob(os.path.join(outDir, '{:02d}_*.ofx'.format(ii)))
+        renumber_files(to_rename,ii,ii-purge)
+
+
+

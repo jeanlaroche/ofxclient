@@ -13,7 +13,7 @@ from ofxhome import OFXHome
 from ofxclient.account import BankAccount, BrokerageAccount, CreditCardAccount
 from ofxclient.config import OfxConfig
 from ofxclient.institution import Institution
-from ofxclient.util import multi_download
+from ofxclient.util import multi_download, purge_files
 from ofxclient.client import DEFAULT_OFX_VERSION
 from ofxclient.ofx2qif import printOfx
 import glob
@@ -325,4 +325,5 @@ def open_with_ofx_handler(filename):
         os.system("xdg-open '%s'" % filename)
 
 if __name__ == '__main__':
+    purge_files()
     run()
