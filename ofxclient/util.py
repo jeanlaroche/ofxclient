@@ -25,8 +25,8 @@ def do_download(a,all_results):
 def getTransDate(t):
     return getattr(t,'date',getattr(t,'settleDate',datetime.datetime(1900,1,1)))
 
-def combined_download(accounts, days=60, do_parallel=1):
-    """Download OFX files and combine them into one
+def multi_download(accounts, days=60, do_parallel=1):
+    """Download OFX files
 
     It expects an 'accounts' list of ofxclient.Account objects
     as well as an optional 'days' specifier which defaults to 60
@@ -57,7 +57,7 @@ def combined_download(accounts, days=60, do_parallel=1):
                 new_transactions.append(trans)
 
         a.statement.transactions = new_transactions
-        return ofx,None,len(a.statement.transactions)
+        return ofx,ofx_str,len(a.statement.transactions)
 
     def output_account(account,ofx,ofx_str,idx):
         a=ofx.account
@@ -111,7 +111,7 @@ def combined_download(accounts, days=60, do_parallel=1):
                     num_new_trans = -1
         if num_new_trans <= 0:
             print('    {:<25} No new transactions Bal. {:>10} as of {}'.format(inst,balance, bal_date))
-            return idx
+            return idx,0
 
         if ofx_str is None:
             outfile = io.open(name, 'w')
@@ -124,7 +124,7 @@ def combined_download(accounts, days=60, do_parallel=1):
         if hasattr(bal_date,'strftime'): bal_date = bal_date.strftime('%Y-%b-%d')
         print('    {:<25} {:>2}/{}  trans. Bal. {:>10} as of {} -> {}'.format(inst, len(a.statement.transactions), num_new_trans,
                                                                         balance, bal_date, name))
-        return idx
+        return idx,num_new_trans
 
     if not do_parallel:
         print("Downloading")
@@ -133,7 +133,7 @@ def combined_download(accounts, days=60, do_parallel=1):
             print('    {}'.format(a.description))
             ofx = a.download(days=days).read()
             ofx,ofx_str,n = prune_transactions(ofx)
-            idx=output_account(a,ofx,ofx_str,idx)
+            idx,_=output_account(a,ofx,ofx_str,idx)
     else:
         print("Downloading in parallel")
         out_list = [[]]*len(accounts)
@@ -146,17 +146,47 @@ def combined_download(accounts, days=60, do_parallel=1):
         # It would be cleaner to use semaphores here, but this works OK.
         ii=0
         idx = None
+        all_ofx = []
         while 1:
             for ii,a in enumerate(accounts):
                 ofx = out_list[ii]
                 if not len(ofx): continue
                 ofx,ofx_str,n = prune_transactions(ofx)
                 if n != 0:
-                    idx = output_account(accounts[ii],ofx,ofx_str,idx)
+                    idx,m = output_account(accounts[ii],ofx,ofx_str,idx)
+                    if m: all_ofx.append(ofx_str)
                 else:
                     print('    {:<25} No new transactions'.format(a.description))
                 out_list[ii] = ''
             if all([not a.thread.is_alive() for a in accounts]): break
             time.sleep(1)
     t_end = time.time()
+    combine_ofx(all_ofx,idx)
     print('Done. {:.0f} seconds elapsed...'.format(t_end-t_start))
+
+def combine_ofx(ofx_list,idx):
+    if len(ofx_list) < 2: return
+    def findOFXTab(ofx_str):
+        ofxIdx = []
+        sofxIdx = []
+        all_lines = ofx_str.split('<')
+        out_lines = []
+        for ii,line in enumerate(all_lines):
+            line='<'+line
+            if '<OFX>' in line: ofxIdx.append(ii)
+            if '</OFX>' in line: sofxIdx.append(ii)
+            out_lines.append(line)
+        return ofxIdx,sofxIdx,out_lines
+    # Output the first one to the last </OFX> then the next one from <OFX> -> </OFX>
+    o,s,lines = findOFXTab(ofx_list[0])
+    A = ''.join(lines[0:s[-1]])
+    for ofx in ofx_list[1:]:
+        o, s, lines = findOFXTab(ofx)
+        A += ''.join(lines[o[0]+1:s[-1]])
+    A += '</OFX>\n'
+
+    outDir = os.getenv('OFX_OUTDIR', os.getenv('HOME', '.'))
+    name = os.path.join(outDir, '{:02d}_Combined.ofx'.format(idx))
+    with open(name,'w') as f:
+        f.write(A)
+    print('Wrote {}'.format(name))

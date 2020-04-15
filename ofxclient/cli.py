@@ -13,7 +13,7 @@ from ofxhome import OFXHome
 from ofxclient.account import BankAccount, BrokerageAccount, CreditCardAccount
 from ofxclient.config import OfxConfig
 from ofxclient.institution import Institution
-from ofxclient.util import combined_download
+from ofxclient.util import multi_download
 from ofxclient.client import DEFAULT_OFX_VERSION
 from ofxclient.ofx2qif import printOfx
 import glob
@@ -101,9 +101,9 @@ def main_menu(args):
                 if len(choice) > 1:
                     # In case we do D1,2,3,4,5
                     indices = choice[1:].split(',')
-                    combined_download([accounts[int(ii)] for ii in indices if ii], days=args.download_days)
+                    multi_download([accounts[int(ii)] for ii in indices if ii], days=args.download_days)
                 else:
-                    combined_download(accounts, days=args.download_days)
+                    multi_download(accounts, days=args.download_days)
                 return
         elif choice in ['q', '']:
             return
@@ -204,7 +204,7 @@ def view_account_menu(account, args):
         menu_item('D', 'Download')
         choice = prompt().lower()
         if choice == 'd':
-            combined_download([account,], days=args.download_days, do_parallel=0)
+            multi_download([account,], days=args.download_days, do_parallel=0)
         return
 
 
