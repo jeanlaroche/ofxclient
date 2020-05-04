@@ -42,6 +42,8 @@ def run():
     parser.add_argument('--ofx-version', default=DEFAULT_OFX_VERSION, type=int, help='ofx version to use for new accounts (default: %s)' % DEFAULT_OFX_VERSION)
     args = parser.parse_args()
 
+    purge_files()
+
     if args.show:
         # if args.show == '' list all files.
         if args.show == '*':
@@ -325,5 +327,4 @@ def open_with_ofx_handler(filename):
         os.system("xdg-open '%s'" % filename)
 
 if __name__ == '__main__':
-    purge_files()
     run()
