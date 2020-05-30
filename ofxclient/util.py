@@ -161,7 +161,7 @@ def multi_download(accounts, days=60, do_parallel=1):
             if all([not a.thread.is_alive() for a in accounts]): break
             time.sleep(1)
     t_end = time.time()
-    combine_ofx(all_ofx,idx)
+    #combine_ofx(all_ofx,idx)
     print('Done. {:.0f} seconds elapsed...'.format(t_end-t_start))
 
 def combine_ofx(ofx_list,idx):
