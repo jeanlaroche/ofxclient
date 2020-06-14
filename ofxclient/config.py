@@ -100,11 +100,13 @@ class SecurableConfigParser(ConfigParser):
         for k, v in ConfigParser.items(self, section):
             if self.is_secure_option(section, k):
                 v = self.get(section, k)
-                if v is None:
+                foo = dict(items)
+                if v is None : #or "Chase" in foo['description']:
                     from .cli import prompt
                     foo = dict(items)
                     print("Could not get value from keyring! for", k, foo['description'])
                     value = prompt('input> ')
+                    if not value: continue
                     s_option = "%s%s" % (section, k)
                     keyring.set_password(self.keyring_name, s_option, value)
 

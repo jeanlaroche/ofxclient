@@ -25,6 +25,73 @@ def do_download(a,all_results):
 def getTransDate(t):
     return getattr(t,'date',getattr(t,'settleDate',datetime.datetime(1900,1,1)))
 
+def output_account2(account,ofx,ofx_str,idx):
+    a=ofx.account
+    inst = account.description
+    p = OfxPrinter(ofx,None)
+    balance = 0
+    bal_date = ''
+    try:
+        if not hasattr(a.statement, 'end_date'): a.statement.end_date = 'No Date'
+        balance,bal_date = a.statement.available_cash,a.statement.end_date
+    except:
+        pass
+    try:
+        balance,bal_date = a.statement.positions[-1].market_value,a.statement.positions[-1].date
+    except:
+        pass
+    try:
+        balance, bal_date = a.statement.balance, a.statement.balance_date
+    except:
+        pass
+
+    out_dir = os.getenv('OFX_OUTDIR',os.getenv('HOME','.'))
+    if not os.path.exists(out_dir): os.mkdir(out_dir)
+    if idx is None:
+        all_files_written = glob.glob(os.path.join(out_dir,'*.ofx'))
+        all_indices = [re.findall('^(\d+)_',os.path.basename(file)) for file in all_files_written]
+        all_indices = [int(item[0]) for item in all_indices if len(item)]+[0]
+        idx = (max(all_indices)+1)%100
+    name = os.path.join(out_dir,'{:02d}_'.format(idx)+account.description.replace(' ', '_') + '.ofx')
+    for ii in range(1,100):
+        prev_idx = (idx-ii+100)%100
+        prev_name = os.path.join(out_dir,'{:02d}_'.format(prev_idx)+account.description.replace(' ', '_') + '.ofx')
+        if os.path.exists(prev_name): break
+    else:
+        prev_name = ''
+
+    num_new_trans = len(a.statement.transactions)
+    if prev_name:
+        with open(prev_name) as f:
+            prev_ofx = OfxParser.parse(f)
+            prev_a = prev_ofx.account
+            try:
+                prev_max_date = max([getTransDate(t) for t in prev_a.statement.transactions])
+                # This counts transactions that are in the new one, but not in the previous one and whose date
+                # is later than the previous latest date.
+                # all_new_ids = [t.id for t in a.statement.transactions if getTransDate(t) > prev_max_date]
+                all_new_ids = [t.id for t in a.statement.transactions]
+                all_prev_ids = [t.id for t in prev_a.statement.transactions]
+                num_new_trans = len(set(all_new_ids)-set(all_prev_ids))
+            except:
+                num_new_trans = -1
+    if num_new_trans <= 0:
+        print('    {:<25} No new transactions Bal. {:>10} as of {}'.format(inst,balance, bal_date))
+        return idx,0
+
+    if ofx_str is None:
+        outfile = io.open(name, 'w')
+        p.writeToFile(outfile)
+        outfile.close()
+    else:
+        with open(name,'w') as f:
+            f.write(ofx_str)
+
+    if hasattr(bal_date,'strftime'): bal_date = bal_date.strftime('%Y-%b-%d')
+    print('    {:<25} {:>2}/{}  trans. Bal. {:>10} as of {} -> {}'.format(inst, len(a.statement.transactions), num_new_trans,
+                                                                    balance, bal_date, name))
+    return idx,num_new_trans
+
 def multi_download(accounts, days=60, do_parallel=1):
     """Download OFX files
 
@@ -79,17 +146,17 @@ def multi_download(accounts, days=60, do_parallel=1):
         except:
             pass
 
-        outDir = os.getenv('OFX_OUTDIR',os.getenv('HOME','.'))
-        if not os.path.exists(outDir): os.mkdir(outDir)
+        out_dir = os.getenv('OFX_OUTDIR',os.getenv('HOME','.'))
+        if not os.path.exists(out_dir): os.mkdir(out_dir)
         if idx is None:
-            all_files_written = glob.glob(os.path.join(outDir,'*.ofx'))
+            all_files_written = glob.glob(os.path.join(out_dir,'*.ofx'))
             all_indices = [re.findall('^(\d+)_',os.path.basename(file)) for file in all_files_written]
             all_indices = [int(item[0]) for item in all_indices if len(item)]+[0]
             idx = (max(all_indices)+1)%100
-        name = os.path.join(outDir,'{:02d}_'.format(idx)+account.description.replace(' ', '_') + '.ofx')
+        name = os.path.join(out_dir,'{:02d}_'.format(idx)+account.description.replace(' ', '_') + '.ofx')
         for ii in range(1,100):
             prev_idx = (idx-ii+100)%100
-            prev_name = os.path.join(outDir,'{:02d}_'.format(prev_idx)+account.description.replace(' ', '_') + '.ofx')
+            prev_name = os.path.join(out_dir,'{:02d}_'.format(prev_idx)+account.description.replace(' ', '_') + '.ofx')
             if os.path.exists(prev_name): break
         else:
             prev_name = ''
@@ -185,15 +252,49 @@ def combine_ofx(ofx_list,idx):
         A += ''.join(lines[o[0]+1:s[-1]])
     A += '</OFX>\n'
 
-    outDir = os.getenv('OFX_OUTDIR', os.getenv('HOME', '.'))
-    name = os.path.join(outDir, '{:02d}_Combined.ofx'.format(idx))
+    out_dir = os.getenv('OFX_OUTDIR', os.getenv('HOME', '.'))
+    name = os.path.join(out_dir, '{:02d}_Combined.ofx'.format(idx))
     with open(name,'w') as f:
         f.write(A)
     print('Wrote {}'.format(name))
 
-def find_max_idx(outDir):
+def grab_from_tmp(days):
+    src_dir = 'E:\\temp'
+    # Look for "ExportedTransactions"
+    print("Grabbing OFX files from temp")
+    all_temp_files = glob.glob(os.path.join(src_dir, 'Exported*.ofx'))
+    print("Found %d files"%len(all_temp_files))
+    out_dir = os.getenv('OFX_OUTDIR', os.getenv('HOME', '.'))
+    idx = find_max_idx(out_dir)+1
+    # Rename the files according to their account.
+    for file in all_temp_files:
+        with open(file) as f:
+            ofx = OfxParser.parse(f)
+        if ofx.account.account_id == '*****578679-75': out_name = 'Patelco_Visa'
+        elif ofx.account.account_id == '*****578679-10': out_name = 'Patelco_Checking'
+        else:
+            print("Can't figure out name for file %s",file)
+            exit(0)
+        days_ago = datetime.datetime.now() - datetime.timedelta(days=days)
+        new_transactions = []
+        a = ofx.account
+        # Some banks (citibank for example) simply ignore the STDATE value and return everything.
+        for trans in a.statement.transactions:
+            if getTransDate(trans) >= days_ago:
+                new_transactions.append(trans)
+
+        a.statement.transactions = new_transactions
+        ofx.description = out_name
+        output_account2(ofx,ofx,None,idx)
+        os.rename(file,file+"_done")
+
+    # Move files from src_dir to out_dir
+    # os.rename()
+
+
+def find_max_idx(out_dir):
     # Find max index of all ofx files
-    all_files_written = glob.glob(os.path.join(outDir, '*.ofx'))
+    all_files_written = glob.glob(os.path.join(out_dir, '*.ofx'))
     all_indices = [re.findall('^(\d+)_', os.path.basename(file)) for file in all_files_written]
     all_indices = [int(item[0]) for item in all_indices if len(item)] + [0]
     idx = max(all_indices)
@@ -209,14 +310,14 @@ def renumber_files(files,old,new):
 
 def purge_files():
     # Removes the oldest ofx files to make room for new ones.
-    outDir = os.getenv('OFX_OUTDIR', os.getenv('HOME', '.'))
-    if not os.path.exists(outDir): return
-    idx = find_max_idx(outDir)
+    out_dir = os.getenv('OFX_OUTDIR', os.getenv('HOME', '.'))
+    if not os.path.exists(out_dir): return
+    idx = find_max_idx(out_dir)
     if idx < 90: return
     # Before purging, rename files to remove any gaps in the numbering.
     jj = 0
     for ii in range(idx+1):
-        to_rename = glob.glob(os.path.join(outDir, '{:02d}_*.ofx'.format(ii)))
+        to_rename = glob.glob(os.path.join(out_dir, '{:02d}_*.ofx'.format(ii)))
         if not len(to_rename):
             continue # ii increments but not jj
         if ii==jj:
@@ -224,19 +325,19 @@ def purge_files():
             continue
         renumber_files(to_rename,ii,jj)
     # Did we make enough room to not have to purge?
-    idx = find_max_idx(outDir)
+    idx = find_max_idx(out_dir)
     if idx <= 90: return
 
     purge = 20
     answer = input('Nearing max number of files, purge the earliest {}? ->[yes/n]'.format(purge))
     if not answer == 'yes': return
     for ii in range(purge):
-        to_purge = glob.glob(os.path.join(outDir, '{:02d}_*.ofx'.format(ii)))
+        to_purge = glob.glob(os.path.join(out_dir, '{:02d}_*.ofx'.format(ii)))
         for file in to_purge:
             print("Removing {}".format(os.path.basename(file)))
             os.remove(file)
     for ii in range(purge,100):
-        to_rename = glob.glob(os.path.join(outDir, '{:02d}_*.ofx'.format(ii)))
+        to_rename = glob.glob(os.path.join(out_dir, '{:02d}_*.ofx'.format(ii)))
         renumber_files(to_rename,ii,ii-purge)
 
 

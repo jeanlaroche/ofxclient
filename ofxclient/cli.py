@@ -13,7 +13,7 @@ from ofxhome import OFXHome
 from ofxclient.account import BankAccount, BrokerageAccount, CreditCardAccount
 from ofxclient.config import OfxConfig
 from ofxclient.institution import Institution
-from ofxclient.util import multi_download, purge_files
+from ofxclient.util import multi_download, purge_files, grab_from_tmp
 from ofxclient.client import DEFAULT_OFX_VERSION
 from ofxclient.ofx2qif import printOfx
 import glob
@@ -37,6 +37,7 @@ def run():
     parser.add_argument('-s', '--show', help = 'Show info from supplied ofx file, * for a list of all files.')
     parser.add_argument('-d', '--download', help = 'Download from nth account in .ini file, can be 5 or 5,7,8 etc', default = '')
     parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-t', action='store_true', help = 'Grab ofx from temp')
     parser.add_argument('-c', '--config', help='Use supplied config file')
     parser.add_argument('-dd','--download-days', default=DOWNLOAD_DAYS, type=int, help='number of days to download (default: %s)' % DOWNLOAD_DAYS)
     parser.add_argument('--ofx-version', default=DEFAULT_OFX_VERSION, type=int, help='ofx version to use for new accounts (default: %s)' % DEFAULT_OFX_VERSION)
@@ -64,6 +65,10 @@ def run():
 
     accounts = GlobalConfig.accounts()
     account_ids = [a.local_id() for a in accounts]
+
+    if args.t:
+        grab_from_tmp(args.download_days)
+        sys.exit(0)
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
