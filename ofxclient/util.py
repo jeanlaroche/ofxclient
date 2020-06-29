@@ -260,6 +260,8 @@ def combine_ofx(ofx_list,idx):
 
 def grab_from_tmp(days):
     src_dir = 'E:\\temp'
+    if not os.path.exists(src_dir):
+        src_dir = os.path.join(os.getenv('HOME',''),'Downloads')
     # Look for "ExportedTransactions"
     print("Grabbing OFX files from temp")
     all_temp_files = glob.glob(os.path.join(src_dir, 'Exported*.ofx'))
@@ -273,7 +275,7 @@ def grab_from_tmp(days):
         if ofx.account.account_id == '*****578679-75': out_name = 'Patelco_Visa'
         elif ofx.account.account_id == '*****578679-10': out_name = 'Patelco_Checking'
         else:
-            print("Can't figure out name for file %s",file)
+            print("Can't figure out name for file %s"%file)
             exit(0)
         days_ago = datetime.datetime.now() - datetime.timedelta(days=days)
         new_transactions = []
