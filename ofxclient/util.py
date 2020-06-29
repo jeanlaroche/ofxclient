@@ -264,7 +264,11 @@ def grab_from_tmp(days):
         src_dir = os.path.join(os.getenv('HOME',''),'Downloads')
     # Look for "ExportedTransactions"
     print("Grabbing OFX files from temp")
-    all_temp_files = glob.glob(os.path.join(src_dir, 'Exported*.ofx'))
+    all_temp_files = glob.glob(os.path.join(src_dir, '*.ofx_done'))
+    for file in all_temp_files:
+        os.remove(file)
+    all_temp_files = glob.glob(os.path.join(src_dir, '*.ofx'))
+    all_temp_files += glob.glob(os.path.join(src_dir, '*.qfx'))
     print("Found %d files"%len(all_temp_files))
     out_dir = os.getenv('OFX_OUTDIR', os.getenv('HOME', '.'))
     idx = find_max_idx(out_dir)+1
@@ -274,6 +278,10 @@ def grab_from_tmp(days):
             ofx = OfxParser.parse(f)
         if ofx.account.account_id == '*****578679-75': out_name = 'Patelco_Visa'
         elif ofx.account.account_id == '*****578679-10': out_name = 'Patelco_Checking'
+        elif ofx.account.account_id == '*****578679-15': out_name = 'Patelco_Money_Market'
+        elif ofx.account.account_id == '840210': out_name = 'MassMutual'
+        elif ofx.account.account_id == '0234067981': out_name = 'SunTrust'
+        elif ofx.account.account_id == '********3009': out_name = 'Barclays'
         else:
             print("Can't figure out name for file %s"%file)
             exit(0)
@@ -287,12 +295,16 @@ def grab_from_tmp(days):
 
         a.statement.transactions = new_transactions
         ofx.description = out_name
+        fix_ofx(ofx)
         output_account2(ofx,ofx,None,idx)
         os.rename(file,file+"_done")
 
     # Move files from src_dir to out_dir
     # os.rename()
 
+def fix_ofx(ofx):
+    if not hasattr(ofx,'trnuid'): ofx.trnuid = 0
+    if not hasattr(ofx,'status'): ofx.status = ""
 
 def find_max_idx(out_dir):
     # Find max index of all ofx files
@@ -326,6 +338,7 @@ def purge_files():
             jj += 1
             continue
         renumber_files(to_rename,ii,jj)
+        jj += 1
     # Did we make enough room to not have to purge?
     idx = find_max_idx(out_dir)
     if idx <= 90: return
