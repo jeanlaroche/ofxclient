@@ -282,6 +282,7 @@ def grab_from_tmp(days):
         elif ofx.account.account_id == '840210': out_name = 'MassMutual'
         elif ofx.account.account_id == '0234067981': out_name = 'SunTrust'
         elif ofx.account.account_id == '********3009': out_name = 'Barclays'
+        elif ofx.account.account_id == '21199293923': out_name = 'Indivision'
         else:
             print("Can't figure out name for file %s"%file)
             exit(0)
