@@ -108,12 +108,10 @@ def multi_download(accounts, days=60, do_parallel=1):
         if not len(ofx_str): return None,ofx_str,0
         f = StringIO(ofx_str)
         ofx = OfxParser.parse(f)
-        try:
-            a = ofx.account
-        except Exception as e:
-            print(e)
-            import pdb
-            pdb.set_trace()
+        if not len(ofx.accounts):
+            print("Error: no account found at %s, message: %s"%(ofx.signon.fi_org,ofx.signon.message))
+            return ofx,ofx_str,0
+        a = ofx.account
         if a.type == 3:
             return ofx, ofx_str, len(a.statement.transactions)
         days_ago = datetime.datetime.now() - datetime.timedelta(days=days)
