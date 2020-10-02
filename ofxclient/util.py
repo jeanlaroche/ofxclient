@@ -32,7 +32,8 @@ def output_account2(account,ofx,ofx_str,idx):
     balance = 0
     bal_date = ''
     try:
-        if not hasattr(a.statement, 'end_date'): a.statement.end_date = 'No Date'
+        # if not hasattr(a.statement, 'end_date'): a.statement.end_date = datetime.datetime.now()
+        # if not hasattr(a.statement, 'start_date'): a.statement.start_date = datetime.datetime.now()
         balance,bal_date = a.statement.available_cash,a.statement.end_date
     except:
         pass
@@ -66,12 +67,15 @@ def output_account2(account,ofx,ofx_str,idx):
             prev_ofx = OfxParser.parse(f)
             prev_a = prev_ofx.account
             try:
-                prev_max_date = max([getTransDate(t) for t in prev_a.statement.transactions])
+                #prev_max_date = max([getTransDate(t) for t in prev_a.statement.transactions])
                 # This counts transactions that are in the new one, but not in the previous one and whose date
                 # is later than the previous latest date.
                 # all_new_ids = [t.id for t in a.statement.transactions if getTransDate(t) > prev_max_date]
-                all_new_ids = [t.id for t in a.statement.transactions]
-                all_prev_ids = [t.id for t in prev_a.statement.transactions]
+
+                # all_new_ids = [t.id for t in a.statement.transactions]
+                # all_prev_ids = [t.id for t in prev_a.statement.transactions]
+                all_new_ids = [t.id for t in b.statement.transactions for b in ofx.accounts]
+                all_prev_ids = [t.id for t in b.statement.transactions for b in prev_ofx.accounts]
                 num_new_trans = len(set(all_new_ids)-set(all_prev_ids))
             except:
                 num_new_trans = -1
@@ -80,9 +84,15 @@ def output_account2(account,ofx,ofx_str,idx):
         return idx,0
 
     if ofx_str is None:
+        # todo
         outfile = io.open(name, 'w')
         p.writeToFile(outfile)
         outfile.close()
+        # Now reload! todo
+        # with open(name) as f:
+        #     new_ofx = OfxParser.parse(f)
+        # pass
+
     else:
         with open(name,'w') as f:
             f.write(ofx_str)
@@ -281,8 +291,9 @@ def grab_from_tmp(days):
         elif ofx.account.account_id == '0234067981': out_name = 'SunTrust'
         elif ofx.account.account_id == '********3009': out_name = 'Barclays'
         elif ofx.account.account_id == '21199293923': out_name = 'Indivision'
+        elif ofx.account.account_id == '58086120': out_name = 'Vanguard'
         else:
-            print("Can't figure out name for file %s"%file)
+            print("Can't figure out name for file %s account %s "%(file,ofx.account.account_id))
             exit(0)
         days_ago = datetime.datetime.now() - datetime.timedelta(days=days)
         new_transactions = []
@@ -296,6 +307,8 @@ def grab_from_tmp(days):
         ofx.description = out_name
         fix_ofx(ofx)
         output_account2(ofx,ofx,None,idx)
+
+        # todo
         os.rename(file,file+"_done")
 
     # Move files from src_dir to out_dir
