@@ -16,6 +16,7 @@ import os
 import glob
 import re
 from threading import Thread
+import copy
 
 def do_download(a,all_results):
     ofx = a.download(days=a.days).read()
@@ -61,7 +62,7 @@ def output_account2(account,ofx,ofx_str,idx):
     else:
         prev_name = ''
 
-    num_new_trans = len(a.statement.transactions)
+    num_new_trans = len([tr for b in ofx.accounts for tr in b.statement.transactions ] )
     if prev_name:
         with open(prev_name) as f:
             prev_ofx = OfxParser.parse(f)
@@ -74,8 +75,8 @@ def output_account2(account,ofx,ofx_str,idx):
 
                 # all_new_ids = [t.id for t in a.statement.transactions]
                 # all_prev_ids = [t.id for t in prev_a.statement.transactions]
-                all_new_ids = [t.id for t in b.statement.transactions for b in ofx.accounts]
-                all_prev_ids = [t.id for t in b.statement.transactions for b in prev_ofx.accounts]
+                all_new_ids = [t.id for b in ofx.accounts for t in b.statement.transactions]
+                all_prev_ids = [t.id for b in prev_ofx.accounts for t in b.statement.transactions]
                 num_new_trans = len(set(all_new_ids)-set(all_prev_ids))
             except:
                 num_new_trans = -1
@@ -296,14 +297,13 @@ def grab_from_tmp(days):
             print("Can't figure out name for file %s account %s "%(file,ofx.account.account_id))
             exit(0)
         days_ago = datetime.datetime.now() - datetime.timedelta(days=days)
-        new_transactions = []
-        a = ofx.account
-        # Some banks (citibank for example) simply ignore the STDATE value and return everything.
-        for trans in a.statement.transactions:
-            if getTransDate(trans) >= days_ago:
-                new_transactions.append(trans)
-
-        a.statement.transactions = new_transactions
+        for a in ofx.accounts:
+            new_transactions = []
+            # Some banks (citibank for example) simply ignore the STDATE value and return everything.
+            for trans in a.statement.transactions:
+                if getTransDate(trans) >= days_ago:
+                    new_transactions.append(trans)
+            a.statement.transactions = copy.copy(new_transactions)
         ofx.description = out_name
         fix_ofx(ofx)
         output_account2(ofx,ofx,None,idx)
