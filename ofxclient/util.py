@@ -29,7 +29,7 @@ def getTransDate(t):
 def output_account2(account,ofx,ofx_str,idx):
     a=ofx.account
     inst = account.description
-    p = OfxPrinter(ofx,None)
+    p = OfxPrinter(ofx,None,term='\n')
     balance = 0
     bal_date = ''
     try:
@@ -274,6 +274,7 @@ def grab_from_tmp(days):
     # Look for "ExportedTransactions"
     print("Grabbing OFX files from temp")
     all_temp_files = glob.glob(os.path.join(src_dir, '*.ofx_done'))
+    all_temp_files += glob.glob(os.path.join(src_dir, '*.qfx_done'))
     for file in all_temp_files:
         os.remove(file)
     all_temp_files = glob.glob(os.path.join(src_dir, '*.ofx'))
@@ -287,12 +288,14 @@ def grab_from_tmp(days):
             ofx = OfxParser.parse(f,fail_fast=0)
         if ofx.account.account_id == '*****578679-75': out_name = 'Patelco_Visa'
         elif ofx.account.account_id == '*****578679-10': out_name = 'Patelco_Checking'
+        elif ofx.account.account_id == '*****578679-00': out_name = 'Patelco_Saving'
         elif ofx.account.account_id == '*****578679-15': out_name = 'Patelco_Money_Market'
         elif ofx.account.account_id == '840210': out_name = 'MassMutual'
         elif ofx.account.account_id == '0234067981': out_name = 'SunTrust'
         elif ofx.account.account_id == '********3009': out_name = 'Barclays'
         elif ofx.account.account_id == '21199293923': out_name = 'Indivision'
         elif ofx.account.account_id == '58086120': out_name = 'Vanguard'
+        elif ofx.account.account_id == '056029G': out_name = 'CreditLyonnais'
         else:
             print("Can't figure out name for file %s account %s "%(file,ofx.account.account_id))
             exit(0)

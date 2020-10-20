@@ -19,7 +19,7 @@ from ofxclient.ofx2qif import printOfx
 import glob
 
 AUTO_OPEN_DOWNLOADS = 1
-DOWNLOAD_DAYS = 5
+DOWNLOAD_DAYS = 65
 
 GlobalConfig = None
 
