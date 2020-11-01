@@ -298,7 +298,7 @@ def grab_from_tmp(days):
         elif ofx.account.account_id == '056029G': out_name = 'CreditLyonnais'
         else:
             print("Can't figure out name for file %s account %s "%(file,ofx.account.account_id))
-            exit(0)
+            out_name = 'Generic'
         days_ago = datetime.datetime.now() - datetime.timedelta(days=days)
         for a in ofx.accounts:
             new_transactions = []
