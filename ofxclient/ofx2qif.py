@@ -68,8 +68,11 @@ def printOfx(filename):
                 except:
                     print("       * {} {} {}".format(tr.date, tr.amount, tr.memo))
             print("    Positions:")
+            tot = 0
             for pos in account.statement.positions:
                 print("       * {} {} ${} {} @ ${}".format(pos.date,pos.security,pos.market_value,pos.units,pos.unit_price))
+                tot += pos.market_value
+            print("       * TOTAL: ${}".format(tot))
 
         print('    {} transactions'.format(len(account.statement.transactions)))
         try:
