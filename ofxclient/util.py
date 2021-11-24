@@ -86,6 +86,7 @@ def output_account2(account,ofx,ofx_str,idx):
 
     if ofx_str is None:
         # todo
+        #name = r'E:\temp\foo.ofx'
         outfile = io.open(name, 'w')
         p.writeToFile(outfile)
         outfile.close()
