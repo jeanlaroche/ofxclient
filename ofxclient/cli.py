@@ -34,7 +34,7 @@ def run():
     global GlobalConfig
 
     parser = argparse.ArgumentParser(prog='ofxclient',description=help,formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-s', '--show', help = 'Show info from supplied ofx file, * for a list of all files.')
+    parser.add_argument('-s', '--show', help = 'Show info from supplied ofx file, * (\*) for a list of all files.')
     parser.add_argument('-d', '--download', help = 'Download from nth account in .ini file, can be 5 or 5,7,8 etc', default = '')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-t', action='store_true', help = 'Grab ofx from temp')
