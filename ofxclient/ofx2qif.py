@@ -60,7 +60,7 @@ def printOfx(filename):
         print("Account: {} {} {}".format(account.account_id,account.account_type,inst))
         if account.type == 1:
             for tr in account.statement.transactions:
-                print("       * {} {} {}".format(tr.date,tr.amount,tr.memo))
+                print("       * {} {} {} {}".format(tr.date,tr.amount,tr.memo,tr.id))
         if account.type == 3:
             for tr in account.statement.transactions:
                 try:
