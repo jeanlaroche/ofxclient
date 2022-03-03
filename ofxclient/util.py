@@ -286,7 +286,7 @@ def grab_from_tmp(days):
     # Rename the files according to their account.
     for file in all_temp_files:
         with open(file) as f:
-            ofx = OfxParser.parse(f,fail_fast=0)
+            ofx = OfxParser.parse(f,fail_fast=0,fix_id=1)
         if ofx.account.account_id == '*****578679-75': out_name = 'Patelco_Visa'
         elif ofx.account.account_id == '*****578679-10': out_name = 'Patelco_Checking'
         elif ofx.account.account_id == '*****578679-00': out_name = 'Patelco_Saving'
