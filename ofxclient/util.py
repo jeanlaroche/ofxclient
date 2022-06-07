@@ -287,10 +287,10 @@ def grab_from_tmp(days):
     for file in all_temp_files:
         with open(file) as f:
             ofx = OfxParser.parse(f,fail_fast=0,fix_id=1)
-        if ofx.account.account_id == '*****578679-75': out_name = 'Patelco_Visa'
-        elif ofx.account.account_id == '*****578679-10': out_name = 'Patelco_Checking'
-        elif ofx.account.account_id == '*****578679-00': out_name = 'Patelco_Saving'
-        elif ofx.account.account_id == '*****578679-15': out_name = 'Patelco_Money_Market'
+        if '578679-75' in ofx.account.account_id: out_name = 'Patelco_Visa'
+        elif '578679-10' in ofx.account.account_id: out_name = 'Patelco_Checking'
+        elif '578679-00' in ofx.account.account_id: out_name = 'Patelco_Saving'
+        elif '578679-15' in ofx.account.account_id: out_name = 'Patelco_Money_Market'
         elif ofx.account.account_id == '840210': out_name = 'MassMutual'
         elif ofx.account.account_id == '0234067981': out_name = 'SunTrust'
         elif ofx.account.account_id == '********3009': out_name = 'Barclays'
