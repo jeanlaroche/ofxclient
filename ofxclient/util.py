@@ -24,7 +24,10 @@ def do_download(a,all_results):
     all_results[a.ii] = ofx
 
 def getTransDate(t):
-    return getattr(t,'date',getattr(t,'settleDate',datetime.datetime(1900,1,1)))
+    if hasattr(t,'date') and t.date is not None: return t.date
+    if hasattr(t,'settleDate') and t.settleDate is not None: return t.settleDate
+    if hasattr(t,'tradeDate') and t.tradeDate is not None: return t.tradeDate
+    return datetime.datetime(1900,1,1)
 
 def output_account2(account,ofx,ofx_str,idx):
     a=ofx.account
@@ -291,7 +294,7 @@ def grab_from_tmp(days):
         elif '578679-10' in ofx.account.account_id: out_name = 'Patelco_Checking'
         elif '578679-00' in ofx.account.account_id: out_name = 'Patelco_Saving'
         elif '578679-15' in ofx.account.account_id: out_name = 'Patelco_Money_Market'
-        elif ofx.account.account_id == '840210': out_name = 'MassMutual'
+        elif ofx.account.account_id == '3781725.757662-01': out_name = 'MassMutual'
         elif ofx.account.account_id == '0234067981': out_name = 'SunTrust'
         elif ofx.account.account_id == '********3009': out_name = 'Barclays'
         elif ofx.account.account_id == '21199293923': out_name = 'Indivision'
