@@ -298,6 +298,7 @@ def grab_from_tmp(days):
         elif ofx.account.account_id == '0234067981': out_name = 'SunTrust'
         elif ofx.account.account_id == '********3009': out_name = 'Barclays'
         elif ofx.account.account_id == '21199293923': out_name = 'Indivision'
+        elif ofx.account.account_id == '564697': out_name = 'Indivision'
         elif ofx.account.account_id == '58086120': out_name = 'Vanguard'
         elif ofx.account.account_id == '056029G': out_name = 'CreditLyonnais'
         elif ofx.account.account_id == 'XXXXXXXXXXXX5468': out_name = 'Citibank'
