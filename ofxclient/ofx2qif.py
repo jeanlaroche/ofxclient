@@ -64,7 +64,7 @@ def printOfx(filename):
         if account.type == 3:
             for tr in account.statement.transactions:
                 try:
-                    print("       * {} {} {} {} @ ${}".format(tr.settleDate,tr.total,tr.type,tr.units,tr.unit_price))
+                    print("       * {} {} {} {} @ ${}".format(tr.settleDate if tr.settleDate else tr.tradeDate,tr.total,tr.type,tr.units,tr.unit_price))
                 except:
                     print("       * {} {} {}".format(tr.date, tr.amount, tr.memo))
             print("    Positions:")

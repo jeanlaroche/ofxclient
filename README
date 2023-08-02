@@ -1,1 +1,5 @@
 README.md
+
+cli.py is the command line.
+utils.py has grab_from_temp.
+ofx2qif.py has the code that display a file.
