@@ -303,6 +303,7 @@ def grab_from_tmp(days):
         elif ofx.account.account_id == '056029G': out_name = 'CreditLyonnais'
         elif ofx.account.account_id == 'XXXXXXXXXXXX5468': out_name = 'Citibank'
         elif ofx.account.account_id == '3541903899': out_name = 'Vio'
+        elif ofx.account.account_id == '57000683045': out_name = 'Monabanq'
         else:
             print("Can't figure out name for file %s account %s "%(file,ofx.account.account_id))
             out_name = 'Generic'
