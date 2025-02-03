@@ -38,6 +38,7 @@ def run():
     parser.add_argument('-d', '--download', help = 'Download from nth account in .ini file, can be 5 or 5,7,8 etc', default = '')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-t', action='store_true', help = 'Grab ofx from temp')
+    parser.add_argument('-p', dest='onlyPositions', action='store_true', help = 'Only print positions')
     parser.add_argument('-c', '--config', help='Use supplied config file')
     parser.add_argument('-dd','--download-days', default=DOWNLOAD_DAYS, type=int, help='number of days to download (default: %s)' % DOWNLOAD_DAYS)
     parser.add_argument('--ofx-version', default=DEFAULT_OFX_VERSION, type=int, help='ofx version to use for new accounts (default: %s)' % DEFAULT_OFX_VERSION)
@@ -55,7 +56,7 @@ def run():
                 print("{:02d}: {}".format(ii,os.path.basename(file)))
             a = int(input("Select file -> "))
             args.show = allFiles[a]
-        printOfx(args.show)
+        printOfx(args.show,args.onlyPositions)
         sys.exit(0)
 
     if args.config:

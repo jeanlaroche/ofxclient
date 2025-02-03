@@ -47,22 +47,39 @@ def ofxToQif(ofxFile,accountName="",accountType=""):
     logging.info("%d transactions written",n)
 
 
-def printOfx(filename):
+def printOfx(filename,onlyPositions=0):
     from pprint import pprint
     if isinstance(filename,str):
         with open(filename) as f:
             ofx = OfxParser.parse(f)
     else:
         ofx = OfxParser.parse(filename)
+    acctId2name = {"58086120":"Audience rollover","41479581":"Creative rollover","25738055":"Roth IRA","72781273":"Trust"}
+    secId2name = {
+        "921908877": "VGSLX",
+        "921946786": "VHYAX",
+        "922906300": "VMFXX",
+        "922021407": "VCAIX",
+        "921909305": "VSCGX",
+        "921909818": "VTIAX",
+        "921943304": "VTMFX",
+        "921913208": "VGIAX",
+        "92202E888": "VTHRX",
+        "92202E805": "VTWNX",
+        "92202E508": "VTTHX",
+    }
     # print(vars(ofx.account))
     for account in ofx.accounts:
         inst = getattr(account,'brokerd',getattr(account.institution,'organization',"No name"))
-        print("Account: {} {} {}".format(account.account_id,account.account_type,inst))
-        if account.type == 1:
+        name = acctId2name.get(account.account_id,account.account_id)
+        if "28740911" == account.account_id and onlyPositions: continue
+        print("Account: {} {} {}".format(name,account.account_type,inst))
+        if account.type == 1 and not onlyPositions:
             for tr in account.statement.transactions:
                 print("       * {} {} {} {}".format(tr.date,tr.amount,tr.memo,tr.id))
         if account.type == 3:
             for tr in account.statement.transactions:
+                if onlyPositions: continue
                 try:
                     print("       * {} {} {} {} @ ${}".format(tr.settleDate if tr.settleDate else tr.tradeDate,tr.total,tr.type,tr.units,tr.unit_price))
                 except:
@@ -70,18 +87,20 @@ def printOfx(filename):
             print("    Positions:")
             tot = 0
             for pos in account.statement.positions:
-                print("       * {} {} ${} {} @ ${}".format(pos.date,pos.security,pos.market_value,pos.units,pos.unit_price))
+                name = secId2name.get(pos.security, pos.security)
+                print("       * {} {} ${} {} @ ${}".format(pos.date,name,pos.market_value,pos.units,pos.unit_price))
                 tot += pos.market_value
             print("       * TOTAL: ${}".format(tot))
 
-        print('    {} transactions'.format(len(account.statement.transactions)))
+        if not onlyPositions: print('    {} transactions'.format(len(account.statement.transactions)))
         try:
             if not hasattr(account.statement,'end_date'): account.statement.end_date = 'No Date'
             print("    Cash {} as of {}".format(account.statement.available_cash,str(account.statement.end_date)))
         except:
             pass
         try:
-            print("    Market Value {} as of {}".format(account.statement.positions[-1].market_value,str(account.statement.positions[-1].date)))
+            if not onlyPositions:
+                print("    Market Value {} as of {}".format(account.statement.positions[-1].market_value,str(account.statement.positions[-1].date)))
         except:
             pass
         try:
